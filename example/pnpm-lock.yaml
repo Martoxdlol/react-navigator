@@ -24,7 +24,7 @@ dependencies:
     specifier: ^18.2.0
     version: 18.2.0(react@18.2.0)
   react-navigator:
-    specifier: file:..
+    specifier: file:../
     version: file:..(react@18.2.0)
   zod:
     specifier: ^3.21.4

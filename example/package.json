@@ -15,7 +15,7 @@
     "@mui/material": "^5.14.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-navigator": "file:..",
+    "react-navigator": "file:../",
     "zod": "^3.21.4"
   },
   "devDependencies": {

@@ -125,7 +125,7 @@ export abstract class PageRouteBase extends Route {
         if (this.opaque) {
             return this.navigator?.options.defaultRouteBackground ?? defaultBackground(this.navigator?.options.darkMode)
         } else {
-            return 'transparent'
+            return 'rgba(0,0,0,0.3)'
         }
     }
 
@@ -162,8 +162,13 @@ export type PageRouteOptions = {
     animation?: AnimationFrom
     as?: React.FunctionComponent<unknown> | React.ComponentClass<unknown> | string
     style?: React.CSSProperties
+    containerStyle?: React.CSSProperties
+    containerProps?: React.ComponentProps<'div'>
     className?: string
     innerProps?: Record<string, unknown>
+    onClick?: (e: React.MouseEvent) => void
+    onClickBarrier?: (e: React.MouseEvent) => void
+    barrierLabel?: string
 } & PageRouteBaseOptions
 
 export class PageRoute extends PageRouteBase {
@@ -190,9 +195,29 @@ export class PageRoute extends PageRouteBase {
         // TODO: Animations and freezing
         const { containerRef, freezing, visibility } = useRenderAnimationLogic(this, details)
 
-        const style = { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, background: this.background }
+        const style: React.CSSProperties = { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }
 
-        const props = {
+        if (this.opaque === false) {
+            style.transition = `background-color ${this.transitionDuration}ms`
+            if (visibility !== 'open') {
+                style.background = 'rgba(0,0,0,0)'
+            }
+        } else {
+            style.background = this.background
+        }
+
+        const isOpen = visibility === 'open'
+
+        React.useLayoutEffect(() => {
+            if (this.opaque === false && isOpen && containerRef.current) {
+                setTimeout(() => {
+                    if (!containerRef.current) return
+                    containerRef.current.style.background = this.background
+                }, 1)
+            }
+        }, [isOpen])
+
+        const props: React.ComponentProps<'div'> & Record<string, unknown> = {
             'route-visibility': details.visibility,
             'freeze': freezing.toString(),
             'route-is-current': details.isCurrent.toString(),
@@ -201,6 +226,7 @@ export class PageRoute extends PageRouteBase {
             tabIndex: visibility === 'open' ? 0 : -1,
             autoFocus: visibility === 'open',
             ref: containerRef,
+            title: this.options.barrierLabel,
             style: {
                 ...style,
                 ...this.options.style,
@@ -209,8 +235,35 @@ export class PageRoute extends PageRouteBase {
             ...this.options.innerProps,
         }
 
+        const onClick = this.options.onClick || ((e: React.MouseEvent) => {
+            if (e.target === e.currentTarget) {
+                if (this.options.onClickBarrier) {
+                    this.options.onClickBarrier(e)
+                } else {
+                    this.navigator?.pop()
+                }
+            }
+        })
+
+        let contentExtraStyles: React.CSSProperties = {}
+
+        if (this.opaque === false) {
+            contentExtraStyles = {
+                display: 'flex', justifyContent: 'center', alignItems: 'center',
+            }
+        }
+
         return createElement(this.options.as || 'section', props as any, <Freeze freeze={freezing} placeholder={<>(closed)</>}>
-            {component}
+            <div
+                title=""
+                route-content="true"
+                route-animation-target="true"
+                onClick={onClick}
+                {...this.options.containerProps}
+                style={{ width: '100%', height: '100%', position: 'relative', ...contentExtraStyles, ...this.options.containerStyle }}
+            >
+                {component}
+            </div>
         </Freeze>)
     }
 }

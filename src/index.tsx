@@ -485,7 +485,7 @@ export class ReactNavigator<TRoutes extends RoutesDefinition = RoutesDefinition>
         }
 
         const next = this.getNextRoute()
-        console.log('forward', next)
+        // console.log('forward', next)
 
         if (!next) {
             // TODO: forward child or parent navigator (if possible)

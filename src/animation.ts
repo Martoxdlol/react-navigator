@@ -15,9 +15,16 @@ export function useRenderAnimationLogic(route: PageRoute, props: RouteRenderProp
 
     const lastVisibilityRef = useRef(visibility)
 
+    function getAnimationTarget() {
+        if(route.opaque) {
+            return containerRef.current!
+        }
+
+        return containerRef.current!.children[0] as HTMLDivElement
+    }
 
     useLayoutEffect(() => {
-        console.log('visibility', route.location.routeName, `${lastVisibilityRef.current} -> ${visibility}`)
+        // console.log('visibility', route.location.routeName, `${lastVisibilityRef.current} -> ${visibility}`)
         animationCycle.current++
         const currentAnimationCycle = animationCycle.current
 
@@ -51,7 +58,7 @@ export function useRenderAnimationLogic(route: PageRoute, props: RouteRenderProp
                 return beforeReturn()
             }
 
-            route.animation.animateOpen(containerRef.current!)
+            route.animation.animateOpen(getAnimationTarget())
 
             return beforeReturn()
         }
@@ -59,20 +66,20 @@ export function useRenderAnimationLogic(route: PageRoute, props: RouteRenderProp
         // Close animation
         if (visibility === 'closed' && lastVisibilityRef.current === 'open') {
             //                                                    --> this runs when the animation finishes
-            route.animation.animateClose(containerRef.current!, () => setVisibility(false))
+            route.animation.animateClose(getAnimationTarget(), () => setVisibility(false))
             return beforeReturn()
         }
 
         // Hide animation (pushing a route over another one)
         if (visibility === 'hidden' && lastVisibilityRef.current === 'open') {
             //                                                    --> this runs when the animation finishes
-            route.animation.animateHide(containerRef.current!, () => setVisibility(false))
+            route.animation.animateHide(getAnimationTarget(), () => setVisibility(false))
             return beforeReturn()
         }
 
         if (visibility === 'open' && lastVisibilityRef.current === 'hidden') {
             setVisibility(true)
-            route.animation.animateUnhide(containerRef.current!)
+            route.animation.animateUnhide(getAnimationTarget())
             return beforeReturn()
         }
 
@@ -87,7 +94,7 @@ export function useRenderAnimationLogic(route: PageRoute, props: RouteRenderProp
     }
 }
 
-export type DefaultAnimations = 'scale' | 'fade' | 'slide' | 'none' | 'delayed-exit' | 'default'
+export type DefaultAnimations = 'scale' | 'fade' | 'slide' | 'none' | 'delayed-exit' | 'slide-up' | 'default'
 
 export type AnimationFrom = DefaultAnimations | RouteAnimation
 
@@ -165,6 +172,10 @@ export abstract class RouteAnimation {
 
         if (input === 'scale') {
             return new ScaleAnimation(route)
+        }
+
+        if (input === 'slide-up') {
+            return new SlideUpAnimation(route)
         }
 
         // Default
@@ -325,6 +336,52 @@ export class SlideAnimation extends RouteAnimation {
             keyframes: [
                 { transform: 'translateX(-50%)' },
                 { transform: 'translateX(0)' },
+            ],
+            element,
+            onFinish,
+        })
+    }
+}
+
+export class SlideUpAnimation extends RouteAnimation {
+    animateOpen(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
+        this.animateOn({
+            keyframes: [
+                { transform: 'translateY(100%)' },
+                { transform: 'translateY(0)' },
+            ],
+            element,
+            onFinish,
+        })
+    }
+
+    animateClose(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
+        this.animateOn({
+            keyframes: [
+                { transform: 'translateY(0%)' },
+                { transform: 'translateY(100%)' },
+            ],
+            element,
+            onFinish,
+        })
+    }
+
+    animateHide(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
+        this.animateOn({
+            keyframes: [
+                { transform: 'translateY(0)' },
+                { transform: 'translateY(-50%)' },
+            ],
+            element,
+            onFinish,
+        })
+    }
+
+    animateUnhide(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
+        this.animateOn({
+            keyframes: [
+                { transform: 'translateY(-50%)' },
+                { transform: 'translateY(0)' },
             ],
             element,
             onFinish,

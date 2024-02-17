@@ -99,14 +99,21 @@ type AnimateOnOptions = {
 }
 
 export abstract class RouteAnimation {
-    route: PageRoute
+    route: PageRoute | undefined
 
-    constructor(route: PageRoute) {
-        this.route = route
+    constructor(route?: PageRoute) {
+        if(route) {
+            this.route = route
+        }
     }
 
     protected animateOn(options: AnimateOnOptions) {
         const { element, onFinish, keyframes, options: animationOptions } = options
+
+        if(!this.route) {
+            onFinish?.()
+            return
+        }
 
         const animation = element.animate(keyframes, {
             duration: this.route.transitionDuration,
@@ -135,7 +142,10 @@ export abstract class RouteAnimation {
     }
 
     static from(input: AnimationFrom = 'default', route: PageRoute): RouteAnimation {
-        if ((input as RouteAnimation).__isRouteAnimation) return input as RouteAnimation
+        if ((input as RouteAnimation).__isRouteAnimation) {
+            (input as RouteAnimation).route = route
+            return input as RouteAnimation
+        }
 
         if (input === 'none') {
             return new NoneAnimation(route)
@@ -168,19 +178,19 @@ export class NoneAnimation extends RouteAnimation { }
 
 export class DelayedAnimation extends RouteAnimation {
     animateOpen(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
-        setTimeout(() => onFinish?.(), this.route.transitionDuration)
+        setTimeout(() => onFinish?.(), this.route?.transitionDuration, 0)
     }
 
     animateClose(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
-        setTimeout(() => onFinish?.(), this.route.transitionDuration)
+        setTimeout(() => onFinish?.(), this.route?.transitionDuration, 0)
     }
 
     animateHide(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
-        setTimeout(() => onFinish?.(), this.route.transitionDuration)
+        setTimeout(() => onFinish?.(), this.route?.transitionDuration, 0)
     }
 
     animateUnhide(element: HTMLDivElement | HTMLElement, onFinish?: () => unknown) {
-        setTimeout(() => onFinish?.(), this.route.transitionDuration)
+        setTimeout(() => onFinish?.(), this.route?.transitionDuration, 0)
     }
 }
 

@@ -195,7 +195,9 @@ export class PageRoute extends PageRouteBase {
         // TODO: Animations and freezing
         const { containerRef, freezing, visibility } = useRenderAnimationLogic(this, details)
 
-        const style: React.CSSProperties = { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }
+        const zIndex = ((this.navigator?.routes.indexOf(this) || 0) + 1) * 10
+
+        const style: React.CSSProperties = { position: 'absolute', zIndex, left: 0, right: 0, top: 0, bottom: 0 }
 
         if (this.opaque === false) {
             style.transition = `background-color ${this.transitionDuration}ms`
@@ -223,7 +225,7 @@ export class PageRoute extends PageRouteBase {
             'route-is-current': details.isCurrent.toString(),
             'is-route': 'true',
             'route-key': this.key,
-            tabIndex: visibility === 'open' ? 0 : -1,
+            tabIndex: (visibility === 'open' && this.navigator?.current === this) ? 0 : -1,
             autoFocus: visibility === 'open',
             ref: containerRef,
             title: this.options.barrierLabel,
@@ -236,6 +238,7 @@ export class PageRoute extends PageRouteBase {
         }
 
         const onClick = this.options.onClick || ((e: React.MouseEvent) => {
+            this.navigator?.conditionalFocus()
             if (e.target === e.currentTarget) {
                 if (this.options.onClickBarrier) {
                     this.options.onClickBarrier(e)
